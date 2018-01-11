@@ -9,7 +9,7 @@ Using AWS CLI with MFA enabled everywhere is cumbersome. This attempts to make i
 
 [LastPass account](https://www.lastpass.com/) and [CLI](https://github.com/lastpass/lastpass-cli).
 
-Access to the [Gruntwork.io](https://github.com/gruntwork-io) private repo for their `aws-auth` script.
+Gruntwork.io [aws-auth](https://github.com/gruntwork-io/module-security-public/tree/master/modules/aws-auth) script.
 
 [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/installing.html) to interact with your AWS account assets. The whole reason we're doing this.
 
@@ -35,7 +35,7 @@ static API Access Key ID and Secret Key._
 _These instructions are built for [LastPass](https://www.lastpass.com/) but can be adopted to be used with 
 [1Password](https://1password.com/) or [pass](https://www.passwordstore.org/) to store any static credentials so they don't sit 
 unencrypted on your local disk. Direct link to `pass` instructions from Gruntwork.io can be found 
-[here](https://github.com/gruntwork-io/module-security/blob/master/modules/aws-auth/README.md). Requires private repo access._
+[here](https://github.com/gruntwork-io/module-security-public/tree/master/modules/aws-auth)._
 
 #### Authenticate to an AWS Account using MFA
 
@@ -86,7 +86,7 @@ A typical account switching workflow might be:
 
 Notice that you must re-authenticate to the "primary" AWS account before you can use `aws-auth` again.
 
-## Combining it with password managers
+## Combining it with LastPass
 
 To be fair, using `aws-auth` isn't *really* a one-liner, since you have to set your permanent AWS credentials first:
 
@@ -165,6 +165,8 @@ Username: eval $(AWS_ACCESS_KEY_ID=$(lpass show aws-johndoe --field "Access Key 
 Password: arn:aws:iam::098765432109:role/role-name
 ```
 
+_Note: For the IAM Role ARNs, I'm using the default `lpass` site template since I only need two fields and I can access it quickly with the CLI. The script with the `--role-arn` flag is saved as `Username` and the Role ARN is being saved as `Password`._
+
 #### Start putting the script together
 
 Now, we can start constructing our script in `lpass` that ties all of this together. Again, since this is a custom template, everything has to
@@ -176,7 +178,7 @@ In the Param1 field, copy in:
 read -p "Enter your MFA token: " token
 ```
 
-(The other ParamX fields were added for future use and not necessarily for this script.)
+_Note: The other ParamX fields were added for future use and not necessarily for this script._
 
 ```bash
 $ lpass show aws-auth-security
@@ -207,9 +209,9 @@ Enter your MFA token: 123456
 
 But that's still a lot of typing. How about we alias that and all the additional IAM Role ARNs possibilities? I keep all my aliases defined in `~/.bash_aliases`.
 
-_Remember that `aws-auth-otheraccount` requires we specify the `--role-arn` so we can switch to that role/account. In this example, all 
+_Note: Remember that `aws-auth-otheraccount` requires we specify the `--role-arn` so we can switch to that role/account. In this example, all 
 of that is stored in `lpass` as the secret `aws-johndoe-role-arn-otheraccount`. The `Username` field contains the script and the `Password` field
-contains the role arn._
+contains the Role ARN._
 
 _For every AWS account used in your organization, you'll need to create that additional secret and that BASH alias if you're going to follow along with this.
 Remember to adjust your `alias` scripts as neccessary._
