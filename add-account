@@ -1,0 +1,117 @@
+#!/bin/bash
+
+set -e
+
+function print_usage {
+  echo
+  echo "USAGE: add-account [OPTIONS]"
+  echo
+  echo "This script will:"
+  echo "  - create a new LastPass secret for the new AWS account"
+  echo "  - create a new alias in bash_lpass for the new AWS account"
+  echo "  - attempt to make sure you're not doing it wrong"
+  echo
+  echo "Options:"
+  echo
+  echo -e "  --arn\t\tThe arn of the cross account role to be used."
+  echo -e "       \t\t  Ex. arn:aws:iam::123456789012:role/name-of-role-to-use"
+  echo -e "  --alias\tThe name of the alias to create. 'aws-auth-' will be prepended to this."
+  echo
+}
+
+function write_lpass_acct () {
+  local readonly _arn_name="$1"
+  local readonly _alias_name="$2"
+
+  # Format the new lpass site using printf https://lastpass.github.io/lastpass-cli/lpass.1.html#_examples
+  # Explanation of funky lpass folder syntax https://github.com/lastpass/lastpass-cli/issues/156
+  # printf %s passes the variables in order
+  # Pipe the printf to lpass
+  printf "Username: eval \$(AWS_ACCESS_KEY_ID=\$(lpass show hl-jware-arn --field \"Access Key ID\") AWS_SECRET_ACCESS_KEY=\$(lpass show hl-jware-arn --field \"Secret Access Key\") aws-auth --serial-number \$(lpass show hl-jware-arn --field \"MFA ARN\") --token-code \"\$token\" --role-arn \$(lpass show hl-%s-arn --password))\nPassword: %s" "${_alias_name}" "${_arn_name}" | lpass add "Healthline\aws-auth"/hl-"${_alias_name}"-arn --non-interactive
+}
+
+function write_bash_alias () {
+  local readyonly _alias_name="$1"
+  local bash_file="${HOME}/.monkeydotfiles/bash/bash_lpass"
+
+  if [[ ! -e ${bash_file} ]] ; then
+    echo "ERROR: The file '${bash_file}' is required by this script and not available. Are you using the .monkeydofiles repo?"
+  fi
+
+  new_alias="alias aws-auth-${_alias_name}='eval \"\$(lpass show aws-auth-security --field Param1; lpass show hl-${_alias_name} --username)\"'"
+
+  # Find the number of lines in bash_file and subtract 2
+  line_num=$(( $(wc -l < "${bash_file}") - 2 ))
+
+  # Append the alias to the 2nd to last line of the file
+  # ${line_num}s/^//p; duplicate that line
+  # ${line_num}s/^.*/${new_alias}/ replace the duplicated line with the alias
+  sed -i '' -e "${line_num}s/^//p; ${line_num}s/^.*/${new_alias}/" "${bash_file}"
+
+  echo "INFO: Remember to source ~/.bash_profile"
+  echo
+  echo "INFO: Remember to commit/push .monkeydotfiles"
+}
+
+function assert_is_installed {
+  local readonly name="$1"
+
+  if [[ ! $(command -v "${name}") ]] ; then
+    echo "ERROR: The binary '${name}' is required by this script but is not installed or in the system's PATH."
+    exit 1
+  fi
+}
+
+function assert_not_empty {
+  local readonly arg_name="$1"
+  local readonly arg_value="$2"
+
+  if [[ -z "${arg_value}" ]] ; then
+    echo "ERROR: The value for '${arg_name}' cannot be empty"
+    print_usage
+    exit 1
+  fi
+}
+
+
+function get_variables () {
+  local arn_name=""
+  local alias_name=""
+
+  while [[ $# -gt 0 ]]; do
+    local key="$1"
+
+    case "$key" in
+      --arn)
+        arn_name="$2"
+        shift
+        ;;
+      --alias)
+        alias_name="$2"
+        shift
+        ;;
+      --help)
+        print_usage
+        exit
+        ;;
+      *)
+        echo "ERROR: Unrecognized argument: $key"
+        print_usage
+        exit 1
+        ;;
+    esac
+
+    shift
+  done
+
+  assert_is_installed "lpass"
+  assert_not_empty "--arn" "${arn_name}"
+  assert_not_empty "--alias" "${alias_name}"
+
+  write_lpass_acct "${arn_name}" "${alias_name}"
+
+  write_bash_alias "${alias_name}"
+
+}
+
+get_variables "$@"
