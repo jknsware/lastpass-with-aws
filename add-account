@@ -38,7 +38,7 @@ function write_bash_alias () {
     echo "ERROR: The file '${bash_file}' is required by this script and not available. Are you using the .monkeydofiles repo?"
   fi
 
-  new_alias="alias aws-auth-${_alias_name}='eval \"\$(lpass show aws-auth-security --field Param1; lpass show hl-${_alias_name} --username)\"'"
+  new_alias="alias aws-auth-${_alias_name}='eval \"\$(lpass show aws-auth-security --field Param1; lpass show hl-${_alias_name}-arn --username)\"'"
 
   # Find the number of lines in bash_file and subtract 2
   line_num=$(( $(wc -l < "${bash_file}") - 2 ))
