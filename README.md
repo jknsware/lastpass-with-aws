@@ -248,7 +248,9 @@ $ aws sts get-caller-identity
 
 *Note: the double quotes around the `$()` are required.*
 
+#### Automation
 
+I created a script to ease adding new accounts to `lpass` and BASH aliases. It assumes that [private - .monkeydotfiles](https://github.com/jknsware/.monkeydotfiles) is being used. Run `./add-account --help` for more information.
 
 ### External Links
 
